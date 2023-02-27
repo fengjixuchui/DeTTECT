@@ -2,7 +2,7 @@
 <img src="https://github.com/rabobank-cdc/DeTTECT/wiki/images/logo.png#gh-light-mode-only" alt="DeTT&CT" width=30% height=30%>
 
 #### Detect Tactics, Techniques & Combat Threats
-Latest version: [1.7.0](https://github.com/rabobank-cdc/DeTTECT/wiki/Changelog#version-170)
+Latest version: [1.8.0](https://github.com/rabobank-cdc/DeTTECT/wiki/Changelog#version-180)
 
 To get started with DeTT&CT, check out one of these resources:
 - This [page](https://github.com/rabobank-cdc/DeTTECT/wiki/Getting-started) on the Wiki.
@@ -52,6 +52,15 @@ The work of others inspired some functionality within DeTT&CT:
 - Roberto Rodriguez's work on data quality and scoring of MITRE ATT&CK™ techniques ([How Hot Is Your Hunt Team?](https://cyberwardog.blogspot.com/2017/07/how-hot-is-your-hunt-team.html), [Ready to hunt? First, Show me your data!](https://cyberwardog.blogspot.com/2017/12/ready-to-hunt-first-show-me-your-data.html)).
 - The MITRE ATT&CK Mapping project on GitHub:
   https://github.com/siriussecurity/mitre-attack-mapping.
+
+### Third party tool: Dettectinator
+<i>The Python library to your DeTT&CT YAML files.</i>
+
+Dettectinator is built to be included in your SOC automation tooling. It can be included as a Python library or it can be used via the command line.
+
+Dettectinator provides plugins to read detections from your SIEM or EDR and create/update the DeTT&CT YAML file, so that you can use it to visualize your ATT&CK detection coverage in the ATT&CK Navigator.
+
+More information can be found on Github: [Dettectinator](https://github.com/siriussecurity/dettectinator/).
 
 ## Example
 

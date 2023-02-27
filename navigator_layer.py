@@ -15,7 +15,7 @@ def _get_base_template(name, description, platform, sorting, domain, layer_setti
     """
     layer = dict()
     layer['name'] = name
-    layer['versions'] = {'navigator': '4.5', 'layer': '4.3'}
+    layer['versions'] = {'navigator': '4.8', 'layer': '4.4'}
     layer['domain'] = domain
     layer['description'] = description
 
@@ -102,18 +102,19 @@ def get_layer_template_groups(name, max_count, description, platform, overlay_ty
     layer['legendItems'].append({'label': 'Tech. not often used', 'color': COLOR_GRADIENT_MIN})
     layer['legendItems'].append({'label': 'Tech. used frequently', 'color': COLOR_GRADIENT_MAX})
 
-    if overlay_type == OVERLAY_TYPE_GROUP:
-        layer['legendItems'].append({'label': 'Groups overlay: tech. in group + overlay', 'color': COLOR_GROUP_OVERLAY_MATCH})
-        layer['legendItems'].append({'label': 'Groups overlay: tech. in overlay', 'color': COLOR_GROUP_OVERLAY_NO_MATCH})
+    if overlay_type in (OVERLAY_TYPE_GROUP, OVERLAY_TYPE_CAMPAIGN):
+        title = 'Groups' if overlay_type == OVERLAY_TYPE_GROUP else 'Campaigns'
+        layer['legendItems'].append({'label': f'{title} overlay: tech. in group/campaign + overlay', 'color': COLOR_GROUP_OVERLAY_MATCH})
+        layer['legendItems'].append({'label': f'{title} overlay: tech. in overlay', 'color': COLOR_GROUP_OVERLAY_NO_MATCH})
         layer['legendItems'].append({'label': 'Src. of tech. is only software', 'color': COLOR_SOFTWARE})
-        layer['legendItems'].append({'label': 'Src. of tech. is group(s)/overlay + software', 'color': COLOR_GROUP_AND_SOFTWARE})
+        layer['legendItems'].append({'label': 'Src. of tech. is group/campaign/overlay + software', 'color': COLOR_GROUP_AND_SOFTWARE})
     elif overlay_type == OVERLAY_TYPE_DETECTION:
-        layer['legendItems'].append({'label': 'Tech. in group + detection score 0: Forensics/Context', 'color': COLOR_O_0})
-        layer['legendItems'].append({'label': 'Tech. in group + detection score 1: Basic', 'color': COLOR_O_1})
-        layer['legendItems'].append({'label': 'Tech. in group + detection score 2: Fair', 'color': COLOR_O_2})
-        layer['legendItems'].append({'label': 'Tech. in group + detection score 3: Good', 'color': COLOR_O_3})
-        layer['legendItems'].append({'label': 'Tech. in group + detection score 4: Very good', 'color': COLOR_O_4})
-        layer['legendItems'].append({'label': 'Tech. in group + detection score 5: Excellent', 'color': COLOR_O_5})
+        layer['legendItems'].append({'label': 'Tech. in group/campaign + detection score 0: Forensics/Context', 'color': COLOR_O_0})
+        layer['legendItems'].append({'label': 'Tech. in group/campaign + detection score 1: Basic', 'color': COLOR_O_1})
+        layer['legendItems'].append({'label': 'Tech. in group/campaign + detection score 2: Fair', 'color': COLOR_O_2})
+        layer['legendItems'].append({'label': 'Tech. in group/campaign + detection score 3: Good', 'color': COLOR_O_3})
+        layer['legendItems'].append({'label': 'Tech. in group/campaign + detection score 4: Very good', 'color': COLOR_O_4})
+        layer['legendItems'].append({'label': 'Tech. in group/campaign + detection score 5: Excellent', 'color': COLOR_O_5})
         layer['legendItems'].append({'label': 'Tech. in detection, score 0: Forensics/Context', 'color': COLOR_D_0})
         layer['legendItems'].append({'label': 'Tech. in detection, score 1: Basic', 'color': COLOR_D_1})
         layer['legendItems'].append({'label': 'Tech. in detection, score 2: Fair', 'color': COLOR_D_2})
@@ -121,10 +122,10 @@ def get_layer_template_groups(name, max_count, description, platform, overlay_ty
         layer['legendItems'].append({'label': 'Tech. in detection, score 4: Very good', 'color': COLOR_D_4})
         layer['legendItems'].append({'label': 'Tech. in detection, score 5: Excellent', 'color': COLOR_D_5})
     elif overlay_type == OVERLAY_TYPE_VISIBILITY:
-        layer['legendItems'].append({'label': 'Tech. in group + visibility score 1: Minimal', 'color': COLOR_O_1})
-        layer['legendItems'].append({'label': 'Tech. in group + visibility score 2: Medium', 'color': COLOR_O_2})
-        layer['legendItems'].append({'label': 'Tech. in group + visibility score 3: Good', 'color': COLOR_O_3})
-        layer['legendItems'].append({'label': 'Tech. in group + visibility score 4: Excellent', 'color': COLOR_O_4})
+        layer['legendItems'].append({'label': 'Tech. in group/campaign + visibility score 1: Minimal', 'color': COLOR_O_1})
+        layer['legendItems'].append({'label': 'Tech. in group/campaign + visibility score 2: Medium', 'color': COLOR_O_2})
+        layer['legendItems'].append({'label': 'Tech. in group/campaign + visibility score 3: Good', 'color': COLOR_O_3})
+        layer['legendItems'].append({'label': 'Tech. in group/campaign + visibility score 4: Excellent', 'color': COLOR_O_4})
         layer['legendItems'].append({'label': 'Tech. in visibility, score 1: Minimal', 'color': COLOR_V_1})
         layer['legendItems'].append({'label': 'Tech. in visibility, score 2: Medium', 'color': COLOR_V_2})
         layer['legendItems'].append({'label': 'Tech. in visibility, score 3: Good', 'color': COLOR_V_3})
@@ -246,15 +247,16 @@ def make_layer_metadata_compliant(metadata):
     return metadata
 
 
-def add_metadata_technique_object(technique, obj_type, metadata):
+def add_metadata_technique_object(technique, obj_type, metadata, count_detections):
     """
     Add the metadata for a detection or visibility object as used within any type of overlay.
     :param technique: technique object containing both the visibility and detection object
     :param obj_type: valid values are 'detection' and 'visibility'
     :param metadata: a list to which the metadata will be added
+    :param count_detections: option for the Navigator layer output: count detections instead of listing detections
     :return: the created metadata as a list
     """
-    from generic import calculate_score, get_latest_comment
+    from generic import calculate_score, get_latest_comment, count_detections_in_location
 
     if obj_type not in ['detection', 'visibility']:
         raise Exception("Invalid value for 'obj_type' provided.")
@@ -263,7 +265,27 @@ def add_metadata_technique_object(technique, obj_type, metadata):
     metadata.append({'name': 'Applicable to', 'value': ', '.join(set([a for v in technique[obj_type] for a in v['applicable_to']]))})  # noqa
     metadata.append({'name': '' + obj_type.capitalize() + ' score', 'value': ', '.join([str(calculate_score(technique[obj_type]))])})  # noqa
     if obj_type == 'detection':
-        metadata.append({'name': '' + obj_type.capitalize() + ' location', 'value': ', '.join(set([a for v in technique[obj_type] for a in v['location']]))})  # noqa
+        location = ''
+        if count_detections:
+            location_count = {}
+
+            for applicable_to in technique['detection']:
+                for l in applicable_to['location']:
+                    location_splitted = l.split(': ')
+                    if len(location_splitted) == 2:
+                        if location_splitted[0] not in location_count.keys():
+                            location_count[location_splitted[0]] = 0
+                        location_count[location_splitted[0]] += 1
+                    else:
+                        if 'Detections' not in location_count.keys():
+                            location_count['Detections'] = 0
+                        location_count['Detections'] += 1
+
+            for l, c in location_count.items():
+                location += f"{l}: {c}. "
+        else:
+            location = ', '.join(set([a for v in technique[obj_type] for a in v['location']]))
+        metadata.append({'name': '' + obj_type.capitalize() + ' location', 'value': location})  # noqa
     metadata.append({'name': '' + obj_type.capitalize() + ' comment', 'value': ' | '.join(set(filter(lambda x: x != '', map(lambda k: k['comment'], technique[obj_type]))))})  # noqa
     metadata.append({'name': '' + obj_type.capitalize() + ' score comment', 'value': ' | '.join(set(filter(lambda x: x != '', map(lambda i: get_latest_comment(i), technique[obj_type]))))})  # noqa
 
